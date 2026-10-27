@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: AWS WP Lab Plugin
  * Plugin URI: https://lab.asaxenadev.com
@@ -8,9 +9,10 @@
  * License: GPL2
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-    // Prevent direct execution outside WordPress.
-    define( 'ABSPATH', dirname( __FILE__ ) . '/' );
+namespace AwsWpLab;
+
+if (!defined('ABSPATH')) {
+    define('ABSPATH', dirname(__FILE__) . '/');
 }
 
 /**
@@ -23,7 +25,7 @@ class AwsWpLabPlugin
      *
      * @return string
      */
-    public static function get_version(): string
+    public static function getVersion(): string
     {
         return '1.0.0';
     }
@@ -33,7 +35,7 @@ class AwsWpLabPlugin
      *
      * @return string
      */
-    public static function get_status(): string
+    public static function getStatus(): string
     {
         return 'Active - Deployed via GitHub Actions';
     }
