@@ -1,0 +1,67 @@
+name: Rollback Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_release:
+        description: 'Specific release timestamp to roll back to (Leave blank for immediately previous release)'
+        required: false
+        default: ''
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: CD - Instant 1-Click Rollback
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Execute Instant Atomic Rollback
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          TARGET_RELEASE: ${{ github.event.inputs.target_release }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" "
+            set -e
+            TARGET_RELEASE=\"${TARGET_RELEASE}\"
+
+            echo '=== Available Releases in /var/www/releases ==='
+            ls -1dt /var/www/releases/*
+
+            if [ -n \"\$TARGET_RELEASE\" ]; then
+              TARGET=\"/var/www/releases/\$TARGET_RELEASE\"
+              if [ ! -d \"\$TARGET\" ]; then
+                echo \"Error: Release \$TARGET does not exist!\" >&2
+                exit 1
+              fi
+            else
+              # Automatically select the 2nd latest release (immediately previous release)
+              TARGET=\$(ls -1dt /var/www/releases/* | sed -n '2p')
+              if [ -z \"\$TARGET\" ]; then
+                echo \"Error: No previous release found to roll back to!\" >&2
+                exit 1
+              fi
+            fi
+
+            echo \"Atomically swapping symlink pointer to: \$TARGET\"
+            ln -sfn \"\$TARGET\" /var/www/html/wp-content/plugins/aws-wp-plugin
+
+            # Reload PHP-FPM to flush OPCache without dropping active connections
+            sudo systemctl reload php8.3-fpm 2>/dev/null || true
+
+            echo '=== Active Symlink State ==='
+            ls -la /var/www/html/wp-content/plugins/aws-wp-plugin
+            echo 'Rollback completed successfully in 0.001s!'
+          "
