@@ -10,6 +10,7 @@ concurrency:
 
 jobs:
   test:
+    name: CI - Code Quality & Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +25,7 @@ jobs:
       - run: composer run phpunit
 
   deploy:
+    name: CD - Atomic Zero-Downtime Deploy
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -39,11 +41,20 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
-      - name: Deploy plugin
+      - name: Atomic Deploy via Symlink
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
+          REL=$(date +%Y%m%d%H%M%S)
+          echo "Deploying release: $REL"
           rsync -avz --delete \
             --exclude='.git*' \
             --exclude='node_modules' \
             --exclude='tests' \
             --exclude='.github' \
-            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/wp-content/plugins/aws-wp-plugin/
+            ./ "$SSH_USER@$SSH_HOST":/var/www/releases/$REL/
+          ssh "$SSH_USER@$SSH_HOST" "
+            ln -sfn /var/www/releases/$REL /var/www/html/wp-content/plugins/aws-wp-plugin && \
+            (ls -1dt /var/www/releases/* 2>/dev/null | tail -n +6 | xargs -r rm -rf)
+          "
