@@ -1,0 +1,22 @@
+{
+    "name": "akshat009/aws-wp-plugin",
+    "description": "WordPress plugin for testing AWS CI/CD pipeline",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0 || ^11.0",
+        "squizlabs/php_codesniffer": "^3.8"
+    },
+    "autoload": {
+        "classmap": [
+            "aws-wp-plugin.php"
+        ]
+    },
+    "scripts": {
+        "phpcs": "phpcs --standard=PSR12 --ignore=vendor .",
+        "phpunit": "phpunit tests"
+    }
+}
