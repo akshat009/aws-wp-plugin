@@ -9,7 +9,8 @@ final class PluginTest extends TestCase
 {
     public function testPluginVersionReturnsString(): void
     {
-        $this->assertSame('1.0.0', AwsWpLabPlugin::getVersion());
+        // INTENTIONALLY BROKEN: Testing CI/CD Gate
+        $this->assertSame('9.9.9', AwsWpLabPlugin::getVersion());
     }
 
     public function testPluginStatusIsActive(): void
